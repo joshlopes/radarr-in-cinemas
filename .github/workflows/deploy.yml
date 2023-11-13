@@ -39,6 +39,7 @@ jobs:
             package-lock.json
             tsconfig.json
             index.ts
+            bun.lockb
           outPath: deploy.tar
   
       - name: Deploy App to Caprover
