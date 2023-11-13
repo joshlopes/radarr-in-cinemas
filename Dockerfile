@@ -6,4 +6,4 @@ COPY src ./
 
 RUN bun install
 
-CMD ["bun index.ts"]
+CMD ["bun", "index.ts"]
