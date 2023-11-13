@@ -1,7 +1,5 @@
 FROM oven/bun:1.0.9-alpine
 
-RUN apk --no-cache add mariadb-client
-
 ENV PORT=3000
 
 # Copy the application files
