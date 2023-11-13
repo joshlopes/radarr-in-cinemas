@@ -32,15 +32,11 @@ jobs:
           cwd: "./"
           files: |
             .env.dist
-            migrations/
-            scripts/
             src/
-            babel.config.js
             captain-definition
             Dockerfile
             package.json
             package-lock.json
-            supervisord.conf
             tsconfig.json
           outPath: deploy.tar
   
