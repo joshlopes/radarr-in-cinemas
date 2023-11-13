@@ -1,7 +1,7 @@
 import express from 'express';
-import {NosMovies} from "./src/Infrastructure/Cinema/Nos/NosMovies.ts";
-import {TmdbIndexer} from "./src/Infrastructure/Indexer/Tmdb/TmdbIndexer.ts";
-import {GetMoviesCommand} from "./src/Application/UseCase/GetMovies/GetMoviesCommand.ts";
+import {NosMovies} from "./src/Infrastructure/Cinema/Nos/NosMovies";
+import {TmdbIndexer} from "./src/Infrastructure/Indexer/Tmdb/TmdbIndexer";
+import {GetMoviesCommand} from "./src/Application/UseCase/GetMovies/GetMoviesCommand";
 
 // Create a new Express application instance
 const app = express();

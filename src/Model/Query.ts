@@ -1,3 +1,3 @@
 export interface Query {
-    execute(): any;
+  execute: () => any
 }

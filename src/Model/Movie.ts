@@ -1,6 +1,6 @@
-export type Movie = {
-    title: string;
-    tmdbId: number;
-    poster: string;
-    description: string;
+export interface Movie {
+  title: string
+  tmdbId: number
+  poster: string
+  description: string
 }
