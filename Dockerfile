@@ -1,9 +1,21 @@
-FROM oven/bun:1.0.3-alpine
+FROM oven/bun:1.0.9-alpine
 
-COPY package.json ./
-COPY bun.lockb ./
-COPY src ./
+RUN apk --no-cache add mariadb-client
 
-RUN bun install
+ENV PORT=3000
 
-CMD ["bun", "index.ts"]
+# Copy the application files
+COPY . /app
+
+# Set the working directory
+WORKDIR /app
+
+# Install the dependencies
+RUN bun install --production
+
+# Expose the port
+EXPOSE 3000
+
+COPY docker/entrypoint.sh /entrypoint.sh
+RUN chmod +x /entrypoint.sh
+ENTRYPOINT ["/entrypoint.sh"]

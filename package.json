@@ -25,6 +25,7 @@
     "express": "^4.18.2"
   },
   "scripts": {
+    "start": "bun index.ts",
     "test": "jest --passWithNoTests",
     "clean": "rm -rf ./lib",
     "lint": "eslint src/**/*.ts",
