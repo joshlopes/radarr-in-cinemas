@@ -1,7 +1,9 @@
-import {CinemaApiClient} from "../../../Application/Port/CinemaApiClient.ts";
-import {Movie} from "../../../Model/Movie.ts";
 import axios from "axios";
-import {TmdbIndexer} from "../../Indexer/Tmdb/TmdbIndexer.ts";
+import dayjs from "dayjs";
+import {TmdbIndexer} from "../../Indexer/Tmdb/TmdbIndexer";
+import {CinemaApiClient} from "../../../Application/Port/CinemaApiClient";
+import {Movie} from "../../../Model/Movie";
+dayjs().format()
 
 type NosMovie = {
     uuid: string,
@@ -41,6 +43,7 @@ export class NosMovies implements CinemaApiClient
         console.log(`Found ${movies.length} movies in NOS`)
 
         for (const movie of movies) {
+            const releaseDate = dayjs(movie.releasedate).format('YYYY');
             const tmdbMovies = await this.indexer.discoverMovie(movie.originaltitle, movie.releasedate);
             if (tmdbMovies.length === 0) {
                 console.error('No movie found in TMDB for', movie.originaltitle, movie.releasedate);
@@ -51,7 +54,8 @@ export class NosMovies implements CinemaApiClient
                 title: movie.originaltitle,
                 tmdbId: tmdbMovies[0].id,
                 poster: movie.portraitimages.path,
-                description: tmdbMovies[0].overview
+                description: tmdbMovies[0].overview,
+                release_date: releaseDate,
             })
         }
 
