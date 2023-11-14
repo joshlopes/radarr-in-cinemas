@@ -21,8 +21,8 @@ export class TmdbIndexer {
     }
 
     async discoverMovie(movieName: string, releaseDate: string): Promise<TmdbMovie[]> {
-        releaseDate = dayjs(releaseDate).format('YYYY');
-        const url = `${this.baseUrl}/search/movie?api_key=${this.apiKey}&query=${movieName}&year=${releaseDate}`;
+        const releaseYear = dayjs(releaseDate).format('YYYY');
+        const url = `${this.baseUrl}/search/movie?api_key=${this.apiKey}&query=${movieName}&year=${releaseYear}`;
         console.log(`Fetching TMDB data ${url})`);
         const response = await axios.get(url);
 
