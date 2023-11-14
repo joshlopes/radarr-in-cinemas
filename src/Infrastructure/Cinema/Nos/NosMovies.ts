@@ -43,7 +43,7 @@ export class NosMovies implements CinemaApiClient
         console.log(`Found ${movies.length} movies in NOS`)
 
         for (const movie of movies) {
-            const releaseDate = dayjs(movie.releasedate).format('YYYY');
+            const releaseDate = dayjs(movie.releasedate).format('YYYY-MM-DD');
             const tmdbMovies = await this.indexer.discoverMovie(movie.originaltitle, movie.releasedate);
             if (tmdbMovies.length === 0) {
                 console.error('No movie found in TMDB for', movie.originaltitle, movie.releasedate);
