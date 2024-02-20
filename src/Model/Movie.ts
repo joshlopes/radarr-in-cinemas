@@ -5,11 +5,11 @@ export interface Movie {
   imdbId: string
   imdb_id: string
   poster: string
-  images: {
+  images: Array<{
     coverType: string
     url: string
-  }[],
+  }>
   description: string
-  year: number,
+  year: number
   release_date: string
 }
