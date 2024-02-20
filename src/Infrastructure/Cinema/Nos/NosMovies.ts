@@ -49,11 +49,14 @@ export class NosMovies implements CinemaApiClient
                 console.error('No movie found in TMDB for', movie.originaltitle, movie.releasedate);
                 continue;
             }
+            const imdbId = await this.indexer.fetchImdbId(tmdbMovies[0].id);
 
             returnMovies.push({
                 title: movie.originaltitle,
                 tmdbId: tmdbMovies[0].id,
                 tmdb_id: tmdbMovies[0].id,
+                imdbId: imdbId,
+                imdb_id: imdbId,
                 poster: movie.portraitimages.path,
                 images: [
                     {

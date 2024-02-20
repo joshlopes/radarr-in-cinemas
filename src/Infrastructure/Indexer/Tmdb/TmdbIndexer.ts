@@ -32,4 +32,16 @@ export class TmdbIndexer {
             return [];
         }
     }
+
+    async fetchImdbId(tmdbId: number): Promise<string> {
+        const url = `${this.baseUrl}/movie/${tmdbId}/external_ids?api_key=${this.apiKey}`;
+        console.log(`Fetching TMDB data ${url})`);
+        const response = await axios.get(url);
+
+        if (response.data && response.data.imdb_id) {
+            return response.data.imdb_id;
+        } else {
+            return '';
+        }
+    }
 }
