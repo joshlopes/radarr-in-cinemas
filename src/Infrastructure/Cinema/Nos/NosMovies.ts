@@ -29,7 +29,6 @@ export class NosMovies implements CinemaApiClient
     }
 
     async getMovies(): Promise<Movie[]> {
-        let returnMovies: Movie[] = [];
         const url = 'https://www.cinemas.nos.pt/graphql/execute.json/cinemas/getMoviesInTheatersBigBanner';
         console.log(`Fetching movies from NOS ${url}`);
         const response = await axios.get(url);
@@ -42,6 +41,7 @@ export class NosMovies implements CinemaApiClient
         const movies: NosMovie[] = response.data.data.movieList.items;
         console.log(`Found ${movies.length} movies in NOS`)
 
+        let returnMovies: Movie[] = [];
         for (const movie of movies) {
             const releaseDate = dayjs(movie.releasedate).format('YYYY-MM-DD');
             const tmdbMovies = await this.indexer.discoverMovie(movie.originaltitle, movie.releasedate);
@@ -53,8 +53,16 @@ export class NosMovies implements CinemaApiClient
             returnMovies.push({
                 title: movie.originaltitle,
                 tmdbId: tmdbMovies[0].id,
+                tmdb_id: tmdbMovies[0].id,
                 poster: movie.portraitimages.path,
+                images: [
+                    {
+                        coverType: 'poster',
+                        url: movie.portraitimages.path,
+                    }
+                ],
                 description: tmdbMovies[0].overview,
+                year: dayjs(releaseDate).year(),
                 release_date: releaseDate,
             })
         }
