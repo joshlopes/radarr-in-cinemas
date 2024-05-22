@@ -1,3 +1,3 @@
 export interface CinemaApiClient {
-    getMovies(): Promise<any[]>;
+  getMovies: () => Promise<any[]>
 }
