@@ -1,8 +1,8 @@
 import axios from "axios";
 import dayjs from "dayjs";
 import {TmdbIndexer} from "../../Indexer/Tmdb/TmdbIndexer";
-import {CinemaApiClient} from "../../../Application/Port/CinemaApiClient";
-import {Movie} from "../../../Model/Movie";
+import {CinemaApiClient} from "../../../Domain/CinemaApiClient";
+import {Movie} from "../../../Domain/Movie";
 dayjs().format()
 
 type NosMovie = {

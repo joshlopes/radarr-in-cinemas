@@ -1,6 +1,6 @@
-import {Query} from "../../../Model/Query";
-import {CinemaApiClient} from "../../Port/CinemaApiClient";
-import {Movie} from "../../../Model/Movie";
+import {Query} from "../../../Domain/Query";
+import {CinemaApiClient} from "../../../Domain/CinemaApiClient";
+import {Movie} from "../../../Domain/Movie";
 
 export class GetMoviesCommand implements Query {
     constructor(private cinemaApiClient: CinemaApiClient) {

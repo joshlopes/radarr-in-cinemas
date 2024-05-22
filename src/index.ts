@@ -2,7 +2,7 @@ import {Response} from 'express';
 import express from 'express';
 import {NosMovies} from "./Infrastructure/Cinema/Nos/NosMovies";
 import {TmdbIndexer} from "./Infrastructure/Indexer/Tmdb/TmdbIndexer";
-import {GetMoviesCommand} from "./Application/UseCase/GetMovies/GetMoviesCommand";
+import {GetMoviesCommand} from "./Application/Query/GetMovies/GetMoviesCommand";
 import RSS from 'rss';
 
 // Create a new Express application instance
