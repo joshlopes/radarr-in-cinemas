@@ -1,0 +1,67 @@
+name: "Build"
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: ['**']
+
+jobs:
+  build:
+    name: "Build Image"
+    runs-on: ubuntu-latest
+    outputs:
+      tag: ${{ steps.tag.outputs.tag }}
+
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v4
+
+      - name: Extract Tag Name or SHA for Main Branch
+        if: github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/v')
+        id: tag
+        run: |
+          FULL_TAG="${{ github.ref }}"
+          # Replace slashes with hyphens and remove 'refs/tags/' prefix
+          SANITIZED_TAG="${FULL_TAG/refs\/heads\//}"
+          SANITIZED_TAG="${SANITIZED_TAG/refs\/tags\/}"
+          SANITIZED_TAG="${SANITIZED_TAG/\//-}"
+          if [ -z "$SANITIZED_TAG" ] || [ "$SANITIZED_TAG" == "main" ]; then
+            SANITIZED_TAG="latest"
+          fi
+          echo "Sanitized Tag Name: $SANITIZED_TAG"
+          echo "::set-output name=tag::$SANITIZED_TAG"
+
+      - name: Set SHA for Pull Request
+        if: github.event_name == 'pull_request'
+        id: sha
+        run: |
+          echo "SHA: ${{ github.sha }}"
+          echo "::set-output name=sha::${{ github.sha }}"
+
+      - name: Log in to Docker Hub
+        uses: docker/login-action@70fccc794acd729b2b22dd6a326895f286447728
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+
+      - name: Extract metadata (tags, labels) for Docker
+        id: meta
+        uses: docker/metadata-action@f7b4ed12385588c3f9bc252f0a2b520d83b52d48
+        with:
+          images: joshlopes/radarr-in-cinema
+
+      - name: Build and push Docker image
+        uses: docker/build-push-action@2a53c6ccda456d31fb62eedc658aae06e238b7bd
+        with:
+          context: ./
+          file: ./docker/node/Dockerfile
+          target: prod
+          push: true
+          provenance: false
+          load: false
+          tags: |
+            ${{ (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/v')) && format('joshlopes/radarr-in-cinema:{0}', steps.tag.outputs.tag) || '' }}
+            ${{ github.event_name == 'pull_request' && format('joshlopes/radarr-in-cinema:pr-{0}', steps.sha.outputs.sha) || '' }}
+            ${{ github.event_name == 'pull_request' && format('joshlopes/radarr-in-cinema:pr-{0}', github.event.pull_request.number) || '' }}
+          labels: ${{ steps.meta.outputs.labels }}
