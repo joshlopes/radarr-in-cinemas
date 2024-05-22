@@ -1,8 +1,8 @@
 import {Response} from 'express';
 import express from 'express';
-import {NosMovies} from "./src/Infrastructure/Cinema/Nos/NosMovies";
-import {TmdbIndexer} from "./src/Infrastructure/Indexer/Tmdb/TmdbIndexer";
-import {GetMoviesCommand} from "./src/Application/UseCase/GetMovies/GetMoviesCommand";
+import {NosMovies} from "./Infrastructure/Cinema/Nos/NosMovies";
+import {TmdbIndexer} from "./Infrastructure/Indexer/Tmdb/TmdbIndexer";
+import {GetMoviesCommand} from "./Application/UseCase/GetMovies/GetMoviesCommand";
 import RSS from 'rss';
 
 // Create a new Express application instance
