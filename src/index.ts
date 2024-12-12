@@ -6,6 +6,13 @@ import RSS from 'rss'
 
 // Create a new Express application instance
 const app = express()
+// CORS allow everyone to query
+app.use((_req, res, next) => {
+  res.header('Access-Control-Allow-Origin', '*')
+  res.header('Access-Control-Allow-Methods', 'GET')
+  res.header('Access-Control-Allow-Headers', 'Content-Type')
+  next()
+})
 
 // Init services
 const indexer = new TmdbIndexer(process.env.TMDB_API_KEY ?? '')

@@ -27,6 +27,7 @@ export class TmdbIndexer {
     const response = await axios.get(url)
     const data = response.data
     if (data === undefined || data.results === undefined) {
+      console.error(`No data found in TMDB for ${movieName} (${releaseYear})`)
       return []
     }
 
