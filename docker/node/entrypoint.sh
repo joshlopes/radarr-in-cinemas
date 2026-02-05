@@ -3,9 +3,9 @@ set -e
 
 # Start the app
 if [ "$APP_ENV" = "prod" ]; then
-  pm2-runtime src/index.js
+  bun run src/index.ts
 elif [ "$APP_ENV" = "dev" ]; then
-  cd src && npm run start:watch
+  bun run --watch src/index.ts
 else
-  cd src && npm run start
+  bun run src/index.ts
 fi

@@ -6,10 +6,9 @@ module.exports = {
         }
     ],
     ignorePatterns: [
-        'jest.config.ts',
-        '.eslintrc.js',
-        'babel.config.js',
+        '.eslintrc.cjs',
         'node_modules/',
         'tests/',
+        'dist/',
     ],
 }
