@@ -1,8 +1,9 @@
 {
   "compilerOptions": {
     "strict": true,
-    "target": "ES6",
-    "module": "CommonJS",
+    "target": "ESNext",
+    "module": "ESNext",
+    "moduleResolution": "bundler",
     "esModuleInterop": true,
     "forceConsistentCasingInFileNames": true,
     "skipLibCheck": true,
@@ -13,9 +14,17 @@
     "allowSyntheticDefaultImports": true,
     "experimentalDecorators": true,
     "emitDecoratorMetadata": true,
-    "moduleResolution": "node",
+    "resolveJsonModule": true,
+    "isolatedModules": true,
     "outDir": "./dist",
-    "rootDir": "./"
+    "rootDir": "./",
+    "types": [
+      "bun-types"
+    ]
   },
-  "include": ["src", "bin"],
+  "include": [
+    "src",
+    "bin",
+    "tests"
+  ]
 }
