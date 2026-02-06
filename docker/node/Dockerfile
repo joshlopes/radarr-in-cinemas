@@ -3,8 +3,8 @@ FROM oven/bun:1.3-alpine AS app_base
 # Set the working directory
 WORKDIR /app
 
-COPY ../../package.json ./
-COPY ../../bun.lock* ./
+COPY package.json ./
+COPY bun.lock* ./
 
 # Ports
 ENV PORT=3000
@@ -28,7 +28,7 @@ FROM app_base AS test
 # Install the dependencies
 RUN bun install --frozen-lockfile
 
-COPY ../../ .
+COPY . .
 
 ENV APP_ENV=test
 ENV NODE_ENV=development
@@ -39,9 +39,9 @@ ENTRYPOINT ["/entrypoint.sh"]
 
 FROM app_base AS build
 
-COPY ../../tsconfig.json .
-COPY ../../src ./src
-COPY ../../bin ./bin
+COPY tsconfig.json .
+COPY src ./src
+COPY bin ./bin
 
 RUN bun install
 RUN bun run build
