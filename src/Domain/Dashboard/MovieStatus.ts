@@ -1,5 +1,7 @@
 export type ProcessingStatus = 'pending' | 'processing' | 'success' | 'error' | 'not_found'
 
+export type RadarrStatus = 'unknown' | 'not_added' | 'monitored' | 'downloaded'
+
 export interface MovieStatus {
   id: string
   title: string
@@ -12,6 +14,8 @@ export interface MovieStatus {
   error?: string
   lastUpdated: Date
   source: string
+  radarrStatus?: RadarrStatus
+  radarrId?: number
 }
 
 export interface DashboardStats {

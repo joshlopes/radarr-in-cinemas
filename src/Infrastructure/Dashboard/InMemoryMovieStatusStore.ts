@@ -18,7 +18,9 @@ export class InMemoryMovieStatusStore implements MovieStatusStore {
       lastUpdated: new Date(),
       tmdbId: movie.tmdbId ?? existing?.tmdbId,
       imdbId: movie.imdbId ?? existing?.imdbId,
-      poster: movie.poster ?? existing?.poster
+      poster: movie.poster ?? existing?.poster,
+      radarrStatus: movie.radarrStatus ?? existing?.radarrStatus,
+      radarrId: movie.radarrId ?? existing?.radarrId
     })
   }
 
