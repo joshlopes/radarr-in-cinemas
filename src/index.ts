@@ -5,6 +5,7 @@ import { GetMoviesCommand } from './Application/Query/GetMovies/GetMoviesCommand
 import { InMemoryLogStore } from './Infrastructure/Logging/InMemoryLogStore'
 import { InMemoryMovieStatusStore } from './Infrastructure/Dashboard/InMemoryMovieStatusStore'
 import { DashboardController } from './Ui/Http/DashboardController'
+import { HttpRadarrClient } from './Infrastructure/Radarr/HttpRadarrClient'
 import RSS from 'rss'
 import path from 'path'
 import fs from 'fs'
@@ -23,12 +24,25 @@ app.use((_req, res, next) => {
 const logStore = new InMemoryLogStore(500)
 const movieStatusStore = new InMemoryMovieStatusStore()
 
+// Init Radarr client (optional - only if configured)
+const radarrUrl = process.env.RADARR_URL ?? ''
+const radarrApiKey = process.env.RADARR_API_KEY ?? ''
+const radarrClient = radarrUrl !== '' && radarrApiKey !== ''
+  ? new HttpRadarrClient(radarrUrl, radarrApiKey, logStore)
+  : undefined
+
+if (radarrClient != null) {
+  logStore.log('info', 'Radarr integration enabled', 'System', { url: radarrUrl })
+} else {
+  logStore.log('info', 'Radarr integration disabled (RADARR_URL and RADARR_API_KEY not set)', 'System')
+}
+
 // Init services with logging
 const indexer = new TmdbIndexer(process.env.TMDB_API_KEY ?? '', logStore)
-const nosMovies = new NosMovies(indexer, logStore, movieStatusStore)
+const nosMovies = new NosMovies(indexer, logStore, movieStatusStore, radarrClient)
 
 // Dashboard controller
-const dashboardController = new DashboardController(logStore, movieStatusStore)
+const dashboardController = new DashboardController(logStore, movieStatusStore, radarrClient, indexer)
 
 // Log startup
 logStore.log('info', 'Server starting up', 'System')
@@ -102,6 +116,21 @@ app.get('/api/dashboard/movies', (req, res) => {
 
 app.get('/api/dashboard/stats', (req, res) => {
   dashboardController.getStats(req, res)
+})
+
+// Radarr API routes
+app.get('/api/radarr/config', (req, res) => {
+  void dashboardController.getRadarrConfig(req, res)
+})
+
+app.use(express.json())
+app.post('/api/radarr/add', (req, res) => {
+  void dashboardController.addToRadarr(req, res)
+})
+
+// Movie details API route
+app.get('/api/movies/:tmdbId/details', (req, res) => {
+  void dashboardController.getMovieDetails(req, res)
 })
 
 // Serve dashboard HTML

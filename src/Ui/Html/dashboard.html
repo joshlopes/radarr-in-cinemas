@@ -4,100 +4,514 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Radarr Cinema Dashboard</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; }
-        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #1a1a2e; color: #eee; min-height: 100vh; }
-        .container { max-width: 1400px; margin: 0 auto; padding: 20px; }
-        header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; padding: 15px 20px; background: #16213e; border-radius: 10px; }
-        h1 { font-size: 1.5rem; color: #e94560; }
-        .status-badge { padding: 8px 16px; border-radius: 20px; font-size: 0.85rem; font-weight: 600; }
-        .status-running { background: #4ade80; color: #000; }
-        .status-idle { background: #64748b; color: #fff; }
-        .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin-bottom: 20px; }
-        .stat-card { background: #16213e; padding: 20px; border-radius: 10px; text-align: center; }
-        .stat-value { font-size: 2.5rem; font-weight: 700; color: #e94560; }
-        .stat-label { color: #94a3b8; font-size: 0.9rem; margin-top: 5px; }
-        .main-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
-        @media (max-width: 1000px) { .main-grid { grid-template-columns: 1fr; } }
-        .panel { background: #16213e; border-radius: 10px; overflow: hidden; }
-        .panel-header { padding: 15px 20px; background: #0f3460; display: flex; justify-content: space-between; align-items: center; }
-        .panel-title { font-weight: 600; }
-        .panel-content { padding: 15px; max-height: 500px; overflow-y: auto; }
-        .log-entry { padding: 8px 12px; margin-bottom: 8px; border-radius: 6px; font-size: 0.85rem; background: #1a1a2e; border-left: 3px solid #64748b; }
-        .log-entry.info { border-left-color: #3b82f6; }
-        .log-entry.warn { border-left-color: #f59e0b; }
-        .log-entry.error { border-left-color: #ef4444; }
-        .log-entry.debug { border-left-color: #8b5cf6; }
-        .log-time { color: #64748b; font-size: 0.75rem; }
-        .log-source { color: #e94560; font-weight: 600; margin: 0 8px; }
-        .log-message { color: #e2e8f0; }
-        .movie-card { display: flex; gap: 15px; padding: 12px; margin-bottom: 10px; background: #1a1a2e; border-radius: 8px; }
-        .movie-poster { width: 60px; height: 90px; object-fit: cover; border-radius: 4px; background: #333; }
-        .movie-info { flex: 1; }
-        .movie-title { font-weight: 600; margin-bottom: 4px; }
-        .movie-meta { font-size: 0.8rem; color: #94a3b8; }
-        .movie-ids { font-size: 0.75rem; color: #64748b; margin-top: 4px; }
-        .movie-status { padding: 4px 10px; border-radius: 12px; font-size: 0.75rem; font-weight: 600; }
-        .movie-status.success { background: #22c55e33; color: #4ade80; }
-        .movie-status.error { background: #ef444433; color: #f87171; }
-        .movie-status.not_found { background: #f59e0b33; color: #fbbf24; }
-        .movie-status.processing { background: #3b82f633; color: #60a5fa; }
-        .refresh-info { font-size: 0.8rem; color: #64748b; }
-        .empty-state { text-align: center; padding: 40px; color: #64748b; }
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #0f0f1a 0%, #1a1a2e 50%, #16213e 100%);
+            color: #e5e7eb;
+            min-height: 100vh;
+        }
+
+        /* Scrollbar styling */
+        ::-webkit-scrollbar { width: 8px; height: 8px; }
+        ::-webkit-scrollbar-track { background: #1f2937; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb { background: #4b5563; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #6b7280; }
+
+        .container { max-width: 1600px; margin: 0 auto; padding: 24px; }
+
+        /* Header */
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 32px;
+            padding: 20px 28px;
+            background: rgba(31, 41, 55, 0.8);
+            backdrop-filter: blur(12px);
+            border-radius: 16px;
+            border: 1px solid rgba(75, 85, 99, 0.3);
+        }
+        .logo { display: flex; align-items: center; gap: 12px; }
+        .logo-icon { font-size: 2rem; }
+        h1 { font-size: 1.5rem; font-weight: 700; background: linear-gradient(135deg, #a855f7 0%, #6366f1 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
+        .header-actions { display: flex; align-items: center; gap: 16px; }
+        .refresh-btn {
+            display: flex; align-items: center; gap: 8px;
+            padding: 10px 20px; border-radius: 10px; border: none;
+            background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+            color: white; font-weight: 600; font-size: 0.875rem;
+            cursor: pointer; transition: all 0.2s;
+        }
+        .refresh-btn:hover { transform: translateY(-1px); box-shadow: 0 4px 12px rgba(99, 102, 241, 0.4); }
+        .refresh-btn:disabled { opacity: 0.6; cursor: not-allowed; transform: none; }
+        .refresh-btn.loading .btn-icon { animation: spin 1s linear infinite; }
+        @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+
+        .status-badge { padding: 8px 16px; border-radius: 20px; font-size: 0.8rem; font-weight: 600; display: flex; align-items: center; gap: 6px; }
+        .status-running { background: rgba(34, 197, 94, 0.2); color: #4ade80; border: 1px solid rgba(34, 197, 94, 0.3); }
+        .status-running::before { content: ''; width: 8px; height: 8px; background: #4ade80; border-radius: 50%; animation: pulse 1.5s infinite; }
+        @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
+        .status-idle { background: rgba(100, 116, 139, 0.2); color: #94a3b8; border: 1px solid rgba(100, 116, 139, 0.3); }
+
+        /* Stats Grid */
+        .stats-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 32px; }
+        @media (max-width: 900px) { .stats-grid { grid-template-columns: repeat(2, 1fr); } }
+        @media (max-width: 500px) { .stats-grid { grid-template-columns: 1fr; } }
+        .stat-card {
+            background: rgba(31, 41, 55, 0.6);
+            backdrop-filter: blur(8px);
+            padding: 24px;
+            border-radius: 16px;
+            border: 1px solid rgba(75, 85, 99, 0.3);
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        .stat-card:hover { transform: translateY(-2px); box-shadow: 0 8px 24px rgba(0,0,0,0.3); }
+        .stat-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
+        .stat-icon { width: 40px; height: 40px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 1.25rem; }
+        .stat-icon.total { background: rgba(99, 102, 241, 0.2); }
+        .stat-icon.success { background: rgba(34, 197, 94, 0.2); }
+        .stat-icon.failed { background: rgba(239, 68, 68, 0.2); }
+        .stat-icon.notfound { background: rgba(245, 158, 11, 0.2); }
+        .stat-value { font-size: 2.5rem; font-weight: 700; line-height: 1; }
+        .stat-value.total { color: #818cf8; }
+        .stat-value.success { color: #4ade80; }
+        .stat-value.failed { color: #f87171; }
+        .stat-value.notfound { color: #fbbf24; }
+        .stat-label { color: #9ca3af; font-size: 0.875rem; margin-top: 4px; }
+
+        #last-run { text-align: center; margin-bottom: 32px; color: #6b7280; font-size: 0.875rem; }
+
+        /* Tabs */
+        .tabs { display: flex; gap: 8px; margin-bottom: 24px; }
+        .tab {
+            padding: 12px 24px; border-radius: 10px; border: none;
+            background: rgba(31, 41, 55, 0.6); color: #9ca3af;
+            font-weight: 600; font-size: 0.875rem; cursor: pointer;
+            transition: all 0.2s; display: flex; align-items: center; gap: 8px;
+        }
+        .tab:hover { background: rgba(55, 65, 81, 0.8); color: #e5e7eb; }
+        .tab.active { background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%); color: white; }
+        .tab-count { background: rgba(0,0,0,0.2); padding: 2px 8px; border-radius: 10px; font-size: 0.75rem; }
+
+        /* Content Panels */
+        .content-panel { display: none; }
+        .content-panel.active { display: block; }
+
+        /* Movies Grid - Netflix/Overseerr Style */
+        .movies-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+            gap: 24px;
+        }
+        @media (max-width: 600px) { .movies-grid { grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 16px; } }
+
+        .movie-card {
+            position: relative;
+            border-radius: 12px;
+            overflow: hidden;
+            background: #1f2937;
+            transition: transform 0.3s, box-shadow 0.3s;
+            cursor: pointer;
+        }
+        .movie-card:hover { transform: scale(1.05); box-shadow: 0 12px 40px rgba(0,0,0,0.5); z-index: 10; }
+        .movie-poster-wrapper { position: relative; aspect-ratio: 2/3; overflow: hidden; }
+        .movie-poster { width: 100%; height: 100%; object-fit: cover; transition: transform 0.3s; }
+        .movie-card:hover .movie-poster { transform: scale(1.1); }
+
+        /* Gradient overlay */
+        .movie-overlay {
+            position: absolute; bottom: 0; left: 0; right: 0;
+            background: linear-gradient(to top, rgba(0,0,0,0.95) 0%, rgba(0,0,0,0.7) 40%, transparent 100%);
+            padding: 60px 12px 12px;
+        }
+
+        /* Status Badge on poster - only show errors/not_found */
+        .movie-badge {
+            position: absolute; top: 10px; left: 10px;
+            padding: 4px 10px; border-radius: 6px;
+            font-size: 0.7rem; font-weight: 700; text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        .movie-badge.success { display: none; }
+        .movie-badge.error { background: rgba(239, 68, 68, 0.9); color: white; }
+        .movie-badge.not_found { background: rgba(245, 158, 11, 0.9); color: white; }
+        .movie-badge.processing { background: rgba(59, 130, 246, 0.9); color: white; }
+
+        /* Source badge */
+        .source-badge {
+            position: absolute; top: 10px; right: 10px;
+            padding: 4px 8px; border-radius: 6px;
+            font-size: 0.65rem; font-weight: 600;
+            background: rgba(139, 92, 246, 0.9); color: white;
+        }
+
+        /* ID badges */
+        .id-badges { position: absolute; bottom: 50px; left: 10px; display: flex; gap: 6px; flex-wrap: wrap; }
+        .id-badge { padding: 3px 8px; border-radius: 4px; font-size: 0.65rem; font-weight: 600; background: rgba(0,0,0,0.6); backdrop-filter: blur(4px); }
+        .id-badge.tmdb { color: #06b6d4; border: 1px solid rgba(6, 182, 212, 0.5); }
+        .id-badge.imdb { color: #fbbf24; border: 1px solid rgba(251, 191, 36, 0.5); }
+
+        /* Radarr status badge */
+        .radarr-badge {
+            position: absolute; top: 10px; left: 10px;
+            padding: 4px 8px; border-radius: 6px;
+            font-size: 0.65rem; font-weight: 700; text-transform: uppercase;
+            display: flex; align-items: center; gap: 4px;
+        }
+        .radarr-badge.downloaded { background: rgba(34, 197, 94, 0.9); color: white; }
+        .radarr-badge.downloaded::before { content: '✓'; }
+        .radarr-badge.monitored { background: rgba(59, 130, 246, 0.9); color: white; }
+        .radarr-badge.monitored::before { content: '👁'; font-size: 0.6rem; }
+        .radarr-badge.not_added { background: rgba(249, 115, 22, 0.9); color: white; cursor: pointer; transition: all 0.2s; }
+        .radarr-badge.not_added:hover { background: rgba(249, 115, 22, 1); transform: scale(1.05); }
+        .radarr-badge.not_added::before { content: '+'; }
+        .radarr-badge.unknown { display: none; }
+
+        /* Modal styles */
+        .modal-overlay {
+            position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0, 0, 0, 0.8); backdrop-filter: blur(4px);
+            display: flex; align-items: center; justify-content: center;
+            z-index: 1000; opacity: 0; visibility: hidden; transition: all 0.3s;
+        }
+        .modal-overlay.visible { opacity: 1; visibility: visible; }
+        .modal {
+            background: #1f2937; border-radius: 16px; padding: 24px;
+            max-width: 400px; width: 90%; border: 1px solid rgba(75, 85, 99, 0.5);
+        }
+        .modal h3 { margin: 0 0 16px; color: white; font-size: 1.2rem; }
+        .modal-field { margin-bottom: 16px; }
+        .modal-field label { display: block; color: #9ca3af; font-size: 0.85rem; margin-bottom: 6px; }
+        .modal-field select {
+            width: 100%; padding: 10px 12px; border-radius: 8px;
+            background: #374151; border: 1px solid #4b5563; color: white;
+            font-size: 0.9rem;
+        }
+        .modal-buttons { display: flex; gap: 12px; margin-top: 20px; }
+        .modal-btn {
+            flex: 1; padding: 10px 16px; border-radius: 8px; border: none;
+            font-weight: 600; cursor: pointer; transition: all 0.2s;
+        }
+        .modal-btn.primary { background: #8b5cf6; color: white; }
+        .modal-btn.primary:hover { background: #7c3aed; }
+        .modal-btn.secondary { background: #374151; color: white; }
+        .modal-btn.secondary:hover { background: #4b5563; }
+        .modal-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+        .modal-error { color: #f87171; font-size: 0.85rem; margin-top: 12px; }
+
+        /* Movie Detail Modal */
+        .detail-modal {
+            background: #111827; border-radius: 20px;
+            max-width: 800px; width: 95%; max-height: 90vh;
+            overflow: hidden; border: 1px solid rgba(75, 85, 99, 0.5);
+            display: flex; flex-direction: column;
+        }
+        .detail-modal-header {
+            position: relative; height: 200px; overflow: hidden;
+        }
+        .detail-modal-backdrop {
+            width: 100%; height: 100%; object-fit: cover;
+            filter: brightness(0.4);
+        }
+        .detail-modal-close {
+            position: absolute; top: 16px; right: 16px;
+            width: 36px; height: 36px; border-radius: 50%;
+            background: rgba(0,0,0,0.6); border: none;
+            color: white; font-size: 1.2rem; cursor: pointer;
+            display: flex; align-items: center; justify-content: center;
+            transition: all 0.2s;
+        }
+        .detail-modal-close:hover { background: rgba(0,0,0,0.8); transform: scale(1.1); }
+        .detail-modal-content {
+            display: flex; gap: 24px; padding: 24px;
+            margin-top: -80px; position: relative; overflow-y: auto;
+        }
+        .detail-modal-poster {
+            width: 180px; height: auto; flex-shrink: 0;
+            border-radius: 12px; box-shadow: 0 8px 32px rgba(0,0,0,0.5);
+            object-fit: contain; align-self: flex-start;
+        }
+        .detail-modal-info { flex: 1; min-width: 0; }
+        .detail-modal-title {
+            font-size: 1.5rem; font-weight: 700; color: white;
+            margin-bottom: 4px; line-height: 1.3;
+        }
+        .detail-modal-tagline {
+            font-size: 0.9rem; color: #9ca3af; font-style: italic;
+            margin-bottom: 12px;
+        }
+        .detail-modal-meta {
+            display: flex; flex-wrap: wrap; gap: 12px;
+            margin-bottom: 16px;
+        }
+        .detail-meta-item {
+            display: flex; align-items: center; gap: 6px;
+            font-size: 0.85rem; color: #d1d5db;
+        }
+        .detail-meta-icon { font-size: 1rem; }
+        .detail-modal-genres {
+            display: flex; flex-wrap: wrap; gap: 8px;
+            margin-bottom: 16px;
+        }
+        .detail-genre {
+            padding: 4px 12px; border-radius: 20px;
+            background: rgba(139, 92, 246, 0.2); color: #a78bfa;
+            font-size: 0.75rem; font-weight: 600;
+        }
+        .detail-modal-overview {
+            font-size: 0.9rem; color: #d1d5db; line-height: 1.6;
+            margin-bottom: 20px;
+        }
+        .detail-section {
+            margin-bottom: 20px;
+        }
+        .detail-section-title {
+            font-size: 0.85rem; font-weight: 700; color: #9ca3af;
+            text-transform: uppercase; letter-spacing: 0.5px;
+            margin-bottom: 10px;
+        }
+        .detail-releases {
+            display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 12px;
+        }
+        .detail-release-card {
+            background: rgba(31, 41, 55, 0.8); border-radius: 10px;
+            padding: 12px; border: 1px solid rgba(75, 85, 99, 0.3);
+        }
+        .detail-release-type {
+            font-size: 0.75rem; font-weight: 700; color: #9ca3af;
+            text-transform: uppercase; margin-bottom: 6px;
+        }
+        .detail-release-date {
+            font-size: 0.9rem; color: white; font-weight: 600;
+        }
+        .detail-release-country {
+            font-size: 0.75rem; color: #6b7280; margin-top: 2px;
+        }
+        .detail-radarr-section {
+            background: rgba(31, 41, 55, 0.8); border-radius: 12px;
+            padding: 16px; border: 1px solid rgba(75, 85, 99, 0.3);
+        }
+        .detail-radarr-status {
+            display: flex; align-items: center; gap: 10px;
+            margin-bottom: 12px;
+        }
+        .detail-radarr-badge {
+            padding: 6px 12px; border-radius: 8px;
+            font-size: 0.8rem; font-weight: 700;
+        }
+        .detail-radarr-badge.downloaded { background: rgba(34, 197, 94, 0.2); color: #4ade80; }
+        .detail-radarr-badge.monitored { background: rgba(59, 130, 246, 0.2); color: #60a5fa; }
+        .detail-radarr-badge.not_added { background: rgba(249, 115, 22, 0.2); color: #fb923c; }
+        .detail-add-form { display: flex; gap: 12px; flex-wrap: wrap; }
+        .detail-add-form select {
+            flex: 1; min-width: 150px; padding: 10px 12px;
+            border-radius: 8px; background: #374151;
+            border: 1px solid #4b5563; color: white; font-size: 0.85rem;
+        }
+        .detail-add-btn {
+            padding: 10px 20px; border-radius: 8px; border: none;
+            background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+            color: white; font-weight: 600; cursor: pointer;
+            transition: all 0.2s;
+        }
+        .detail-add-btn:hover { transform: translateY(-1px); box-shadow: 0 4px 12px rgba(99, 102, 241, 0.4); }
+        .detail-add-btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+        .detail-loading {
+            display: flex; align-items: center; justify-content: center;
+            padding: 60px; color: #9ca3af;
+        }
+        @media (max-width: 640px) {
+            .detail-modal-content { flex-direction: column; align-items: center; text-align: center; }
+            .detail-modal-poster { width: 140px; }
+            .detail-modal-meta { justify-content: center; }
+            .detail-modal-genres { justify-content: center; }
+        }
+
+        .movie-title { font-weight: 600; font-size: 0.9rem; color: white; line-height: 1.3; margin-bottom: 4px; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+        .movie-year { font-size: 0.75rem; color: #9ca3af; }
+        .movie-error { font-size: 0.7rem; color: #f87171; margin-top: 6px; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+
+        /* Logs Panel */
+        .logs-panel {
+            background: rgba(31, 41, 55, 0.6);
+            backdrop-filter: blur(8px);
+            border-radius: 16px;
+            border: 1px solid rgba(75, 85, 99, 0.3);
+            max-height: 600px;
+            overflow-y: auto;
+        }
+        .log-entry {
+            padding: 12px 16px;
+            border-bottom: 1px solid rgba(75, 85, 99, 0.2);
+            display: flex; align-items: flex-start; gap: 12px;
+            font-size: 0.85rem;
+            transition: background 0.2s;
+        }
+        .log-entry:hover { background: rgba(55, 65, 81, 0.4); }
+        .log-entry:last-child { border-bottom: none; }
+        .log-level {
+            padding: 3px 8px; border-radius: 4px; font-size: 0.7rem;
+            font-weight: 700; text-transform: uppercase; min-width: 50px; text-align: center;
+        }
+        .log-level.info { background: rgba(59, 130, 246, 0.2); color: #60a5fa; }
+        .log-level.warn { background: rgba(245, 158, 11, 0.2); color: #fbbf24; }
+        .log-level.error { background: rgba(239, 68, 68, 0.2); color: #f87171; }
+        .log-level.debug { background: rgba(139, 92, 246, 0.2); color: #a78bfa; }
+        .log-time { color: #6b7280; font-size: 0.75rem; min-width: 70px; }
+        .log-source { color: #a78bfa; font-weight: 600; min-width: 80px; }
+        .log-message { color: #e5e7eb; flex: 1; }
+        .log-context { color: #6b7280; font-size: 0.75rem; margin-top: 4px; font-family: monospace; }
+
+        .empty-state {
+            text-align: center; padding: 80px 40px; color: #6b7280;
+            display: flex; flex-direction: column; align-items: center; gap: 16px;
+        }
+        .empty-icon { font-size: 4rem; opacity: 0.5; }
+        .empty-title { font-size: 1.25rem; font-weight: 600; color: #9ca3af; }
+        .empty-desc { font-size: 0.875rem; max-width: 300px; }
+
+        /* Loading overlay */
+        .loading-overlay {
+            position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(15, 15, 26, 0.9);
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            z-index: 1000; gap: 24px;
+        }
+        .loading-overlay.hidden { display: none; }
+        .loading-spinner {
+            width: 60px; height: 60px; border: 4px solid rgba(99, 102, 241, 0.2);
+            border-top-color: #6366f1; border-radius: 50%; animation: spin 1s linear infinite;
+        }
+        .loading-text { color: #9ca3af; font-size: 1rem; }
     </style>
 </head>
 <body>
+    <!-- Loading Overlay -->
+    <div id="loading-overlay" class="loading-overlay">
+        <div class="loading-spinner"></div>
+        <div class="loading-text">Fetching movies from cinemas...</div>
+    </div>
+
     <div class="container">
         <header>
-            <h1>🎬 Radarr Cinema Dashboard</h1>
-            <div style="display: flex; align-items: center; gap: 15px;">
-                <span class="refresh-info">Auto-refresh: <span id="countdown">30</span>s</span>
+            <div class="logo">
+                <span class="logo-icon">🎬</span>
+                <h1>Radarr Cinema</h1>
+            </div>
+            <div class="header-actions">
                 <span id="status-badge" class="status-badge status-idle">Idle</span>
+                <button id="refresh-btn" class="refresh-btn" onclick="triggerRefresh()">
+                    <span class="btn-icon">↻</span>
+                    <span class="btn-text">Refresh</span>
+                </button>
             </div>
         </header>
+
         <div class="stats-grid">
             <div class="stat-card">
-                <div class="stat-value" id="stat-total">0</div>
+                <div class="stat-header">
+                    <div class="stat-icon total">🎥</div>
+                </div>
+                <div class="stat-value total" id="stat-total">0</div>
                 <div class="stat-label">Total Movies</div>
             </div>
             <div class="stat-card">
-                <div class="stat-value" id="stat-success" style="color: #4ade80;">0</div>
-                <div class="stat-label">Successful</div>
+                <div class="stat-header">
+                    <div class="stat-icon success">✓</div>
+                </div>
+                <div class="stat-value success" id="stat-success">0</div>
+                <div class="stat-label">Found in TMDB</div>
             </div>
             <div class="stat-card">
-                <div class="stat-value" id="stat-failed" style="color: #f87171;">0</div>
+                <div class="stat-header">
+                    <div class="stat-icon failed">✕</div>
+                </div>
+                <div class="stat-value failed" id="stat-failed">0</div>
                 <div class="stat-label">Failed</div>
             </div>
             <div class="stat-card">
-                <div class="stat-value" id="stat-notfound" style="color: #fbbf24;">0</div>
+                <div class="stat-header">
+                    <div class="stat-icon notfound">?</div>
+                </div>
+                <div class="stat-value notfound" id="stat-notfound">0</div>
                 <div class="stat-label">Not Found</div>
             </div>
         </div>
-        <div id="last-run" style="text-align: center; margin-bottom: 20px; color: #64748b; font-size: 0.9rem;"></div>
-        <div class="main-grid">
-            <div class="panel">
-                <div class="panel-header">
-                    <span class="panel-title">📋 Activity Logs</span>
-                    <span id="log-count" style="color: #64748b; font-size: 0.85rem;">0 entries</span>
-                </div>
-                <div class="panel-content" id="logs-container">
-                    <div class="empty-state">No logs yet. Waiting for activity...</div>
+
+        <div id="last-run"></div>
+
+        <div class="tabs">
+            <button class="tab active" onclick="switchTab('movies')" id="tab-movies">
+                🎬 Movies <span class="tab-count" id="movie-count">0</span>
+            </button>
+            <button class="tab" onclick="switchTab('logs')" id="tab-logs">
+                📋 Logs <span class="tab-count" id="log-count">0</span>
+            </button>
+        </div>
+
+        <div id="movies-panel" class="content-panel active">
+            <div id="movies-container" class="movies-grid">
+                <div class="empty-state">
+                    <div class="empty-icon">🎬</div>
+                    <div class="empty-title">No movies yet</div>
+                    <div class="empty-desc">Click Refresh to fetch movies from cinemas</div>
                 </div>
             </div>
-            <div class="panel">
-                <div class="panel-header">
-                    <span class="panel-title">🎥 Movies</span>
-                    <span id="movie-count" style="color: #64748b; font-size: 0.85rem;">0 movies</span>
-                </div>
-                <div class="panel-content" id="movies-container">
-                    <div class="empty-state">No movies processed yet.</div>
+        </div>
+
+        <div id="logs-panel" class="content-panel">
+            <div id="logs-container" class="logs-panel">
+                <div class="empty-state">
+                    <div class="empty-icon">📋</div>
+                    <div class="empty-title">No logs yet</div>
+                    <div class="empty-desc">Activity will appear here when movies are fetched</div>
                 </div>
             </div>
         </div>
     </div>
+
+    <!-- Add to Radarr Modal -->
+    <div id="radarr-modal" class="modal-overlay" onclick="if(event.target === this) closeRadarrModal()">
+        <div class="modal">
+            <h3>➕ Add to Radarr</h3>
+            <p id="modal-movie-title" style="color: #9ca3af; margin-bottom: 16px;"></p>
+            <div class="modal-field">
+                <label>Root Folder</label>
+                <select id="modal-root-folder"></select>
+            </div>
+            <div class="modal-field">
+                <label>Quality Profile</label>
+                <select id="modal-quality-profile"></select>
+            </div>
+            <div id="modal-error" class="modal-error" style="display: none;"></div>
+            <div class="modal-buttons">
+                <button class="modal-btn secondary" onclick="closeRadarrModal()">Cancel</button>
+                <button class="modal-btn primary" id="modal-add-btn" onclick="confirmAddToRadarr()">Add Movie</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Movie Detail Modal -->
+    <div id="detail-modal" class="modal-overlay" onclick="if(event.target === this) closeDetailModal()">
+        <div class="detail-modal">
+            <div class="detail-modal-header">
+                <img id="detail-backdrop" class="detail-modal-backdrop" src="" alt="">
+                <button class="detail-modal-close" onclick="closeDetailModal()">✕</button>
+            </div>
+            <div id="detail-content" class="detail-modal-content">
+                <div class="detail-loading">Loading...</div>
+            </div>
+        </div>
+    </div>
+
     <script>
-        let countdown = 30;
-        const REFRESH_INTERVAL = 30;
+        let isRefreshing = false;
 
         // HTML escape helper to prevent XSS
         function esc(str) {
@@ -107,6 +521,42 @@
             return el.innerHTML;
         }
 
+        // Switch between tabs
+        function switchTab(tab) {
+            document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+            document.querySelectorAll('.content-panel').forEach(p => p.classList.remove('active'));
+            document.getElementById(`tab-${tab}`).classList.add('active');
+            document.getElementById(`${tab}-panel`).classList.add('active');
+        }
+
+        // Trigger a refresh by calling /api/movies
+        async function triggerRefresh() {
+            if (isRefreshing) return;
+            isRefreshing = true;
+
+            const btn = document.getElementById('refresh-btn');
+            btn.classList.add('loading');
+            btn.disabled = true;
+
+            const badge = document.getElementById('status-badge');
+            badge.innerHTML = '<span></span>Fetching...';
+            badge.className = 'status-badge status-running';
+
+            try {
+                // Call /api/movies to trigger the fetch
+                await fetch('/api/movies');
+                // Then refresh dashboard data
+                await fetchDashboard();
+            } catch (e) {
+                console.error('Failed to refresh:', e);
+            } finally {
+                isRefreshing = false;
+                btn.classList.remove('loading');
+                btn.disabled = false;
+            }
+        }
+
+        // Fetch dashboard data
         async function fetchDashboard() {
             try {
                 const res = await fetch('/api/dashboard');
@@ -115,7 +565,9 @@
                 updateStats(data.stats);
                 updateLogs(data.logs);
                 updateMovies(data.movies);
-            } catch (e) { console.error('Failed to fetch dashboard:', e); }
+            } catch (e) {
+                console.error('Failed to fetch dashboard:', e);
+            }
         }
 
         function updateStats(stats) {
@@ -123,86 +575,388 @@
             document.getElementById('stat-success').textContent = stats.successfulMovies;
             document.getElementById('stat-failed').textContent = stats.failedMovies;
             document.getElementById('stat-notfound').textContent = stats.notFoundMovies;
+
             const badge = document.getElementById('status-badge');
             if (stats.isRunning) {
-                badge.textContent = 'Running...';
+                badge.innerHTML = '<span></span>Running...';
                 badge.className = 'status-badge status-running';
             } else {
                 badge.textContent = 'Idle';
                 badge.className = 'status-badge status-idle';
             }
+
             const lastRun = document.getElementById('last-run');
             if (stats.lastRunAt) {
                 const date = new Date(stats.lastRunAt);
-                const duration = stats.lastRunDuration ? `(${(stats.lastRunDuration / 1000).toFixed(1)}s)` : '';
-                lastRun.textContent = `Last run: ${date.toLocaleString()} ${duration}`;
+                const duration = stats.lastRunDuration ? ` • Duration: ${(stats.lastRunDuration / 1000).toFixed(1)}s` : '';
+                lastRun.textContent = `Last updated: ${date.toLocaleString()}${duration}`;
             } else {
-                lastRun.textContent = 'No runs yet';
+                lastRun.textContent = '';
             }
         }
 
         function updateLogs(logs) {
             const container = document.getElementById('logs-container');
-            document.getElementById('log-count').textContent = `${logs.length} entries`;
+            document.getElementById('log-count').textContent = logs.length;
+
             if (logs.length === 0) {
-                container.innerHTML = '<div class="empty-state">No logs yet. Waiting for activity...</div>';
+                container.innerHTML = `<div class="empty-state">
+                    <div class="empty-icon">📋</div>
+                    <div class="empty-title">No logs yet</div>
+                    <div class="empty-desc">Activity will appear here when movies are fetched</div>
+                </div>`;
                 return;
             }
+
             container.innerHTML = logs.slice().reverse().map(log => {
                 const time = new Date(log.timestamp).toLocaleTimeString();
-                const ctx = log.context ? ` <span style="color:#64748b">${esc(JSON.stringify(log.context))}</span>` : '';
                 const level = esc(log.level);
-                return `<div class="log-entry ${level}">
+                const ctx = log.context ? `<div class="log-context">${esc(JSON.stringify(log.context))}</div>` : '';
+                return `<div class="log-entry">
+                    <span class="log-level ${level}">${level}</span>
                     <span class="log-time">${esc(time)}</span>
-                    <span class="log-source">[${esc(log.source)}]</span>
-                    <span class="log-message">${esc(log.message)}${ctx}</span>
+                    <span class="log-source">${esc(log.source)}</span>
+                    <div class="log-message">${esc(log.message)}${ctx}</div>
                 </div>`;
             }).join('');
         }
 
         function updateMovies(movies) {
             const container = document.getElementById('movies-container');
-            document.getElementById('movie-count').textContent = `${movies.length} movies`;
+            document.getElementById('movie-count').textContent = movies.length;
+
             if (movies.length === 0) {
-                container.innerHTML = '<div class="empty-state">No movies processed yet.</div>';
+                container.innerHTML = `<div class="empty-state">
+                    <div class="empty-icon">🎬</div>
+                    <div class="empty-title">No movies yet</div>
+                    <div class="empty-desc">Click Refresh to fetch movies from cinemas</div>
+                </div>`;
                 return;
             }
-            const defaultPoster = 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" width="60" height="90"><rect fill="%23333" width="60" height="90"/><text x="30" y="50" text-anchor="middle" fill="%23666" font-size="10">No Poster</text></svg>';
+
+            const defaultPoster = 'data:image/svg+xml,' + encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="300" height="450"><rect fill="#1f2937" width="300" height="450"/><text x="150" y="225" text-anchor="middle" fill="#4b5563" font-size="24" font-family="sans-serif">No Poster</text></svg>');
+
             container.innerHTML = movies.map(m => {
-                // Sanitize poster URL - only allow http(s) and data URIs
+                // Sanitize poster URL
                 let poster = defaultPoster;
                 if (m.poster && /^(https?:|data:image\/)/.test(m.poster)) {
                     poster = esc(m.poster);
                 }
-                const ids = [];
-                if (m.tmdbId) ids.push(`TMDB: ${esc(m.tmdbId)}`);
-                if (m.imdbId) ids.push(`IMDB: ${esc(m.imdbId)}`);
+
                 const title = esc(m.originalTitle || m.title);
                 const status = esc(m.status || 'unknown');
-                return `<div class="movie-card">
-                    <img class="movie-poster" src="${poster}" alt="${title}" onerror="this.src='data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%2260%22 height=%2290%22><rect fill=%22%23333%22 width=%2260%22 height=%2290%22/></svg>'">
-                    <div class="movie-info">
-                        <div class="movie-title">${title}</div>
-                        <div class="movie-meta">${esc(m.releaseDate)} • ${esc(m.source)}</div>
-                        <div class="movie-ids">${ids.join(' • ') || 'No IDs yet'}</div>
-                        ${m.error ? `<div style="color:#f87171;font-size:0.75rem;margin-top:4px">⚠️ ${esc(m.error)}</div>` : ''}
+                const source = esc(m.source || 'Unknown');
+                const year = m.releaseDate ? new Date(m.releaseDate).getFullYear() : '';
+                const radarrStatus = esc(m.radarrStatus || 'unknown');
+
+                // Build ID badges
+                let idBadges = '';
+                if (m.tmdbId) idBadges += `<span class="id-badge tmdb">TMDB ${esc(m.tmdbId)}</span>`;
+                if (m.imdbId) idBadges += `<span class="id-badge imdb">${esc(m.imdbId)}</span>`;
+
+                // Radarr badge (not clickable - poster opens detail modal)
+                let radarrBadge = '';
+                if (radarrStatus === 'downloaded') {
+                    radarrBadge = `<span class="radarr-badge downloaded">In Radarr</span>`;
+                } else if (radarrStatus === 'monitored') {
+                    radarrBadge = `<span class="radarr-badge monitored">Monitored</span>`;
+                } else if (radarrStatus === 'not_added') {
+                    radarrBadge = `<span class="radarr-badge not_added">Not in Radarr</span>`;
+                }
+
+                // Make poster clickable if we have a TMDB ID
+                const clickHandler = m.tmdbId ? `onclick="openDetailModal(${m.tmdbId})" style="cursor: pointer;"` : '';
+
+                return `<div class="movie-card" ${clickHandler}>
+                    <div class="movie-poster-wrapper">
+                        <img class="movie-poster" src="${poster}" alt="${title}"
+                             onerror="this.src='${defaultPoster}'">
+                        <span class="movie-badge ${status}">${status.replace('_', ' ')}</span>
+                        ${radarrBadge}
+                        <span class="source-badge">${source}</span>
+                        ${idBadges ? `<div class="id-badges">${idBadges}</div>` : ''}
+                        <div class="movie-overlay">
+                            <div class="movie-title">${title}</div>
+                            <div class="movie-year">${year}</div>
+                            ${m.error ? `<div class="movie-error">⚠️ ${esc(m.error)}</div>` : ''}
+                        </div>
                     </div>
-                    <span class="movie-status ${status}">${status.replace('_', ' ')}</span>
                 </div>`;
             }).join('');
         }
 
-        function tick() {
-            countdown--;
-            document.getElementById('countdown').textContent = countdown;
-            if (countdown <= 0) {
-                countdown = REFRESH_INTERVAL;
-                fetchDashboard();
+        // Hide loading overlay
+        function hideLoading() {
+            document.getElementById('loading-overlay').classList.add('hidden');
+        }
+
+        // Initialize on page load
+        async function init() {
+            // First check if we have any data
+            await fetchDashboard();
+
+            // Check if we have movies, if not trigger a refresh
+            const stats = await fetch('/api/dashboard/stats').then(r => r.json()).catch(() => ({}));
+
+            if (stats.totalMoviesProcessed === 0) {
+                // No movies yet, trigger a fetch
+                document.getElementById('loading-overlay').querySelector('.loading-text').textContent = 'Fetching movies from cinemas...';
+                try {
+                    await fetch('/api/movies');
+                    await fetchDashboard();
+                } catch (e) {
+                    console.error('Initial fetch failed:', e);
+                }
+            }
+
+            hideLoading();
+
+            // Load Radarr config for modal
+            loadRadarrConfig();
+
+            // Set up auto-refresh every 60 seconds
+            setInterval(fetchDashboard, 60000);
+        }
+
+        // Radarr modal state
+        let radarrConfig = null;
+        let currentMovie = null;
+
+        async function loadRadarrConfig() {
+            try {
+                const res = await fetch('/api/radarr/config');
+                if (res.ok) {
+                    radarrConfig = await res.json();
+                    if (radarrConfig.enabled) {
+                        const rootSelect = document.getElementById('modal-root-folder');
+                        const qualitySelect = document.getElementById('modal-quality-profile');
+                        rootSelect.innerHTML = radarrConfig.rootFolders.map(f =>
+                            `<option value="${esc(f.path)}">${esc(f.path)}</option>`
+                        ).join('');
+                        qualitySelect.innerHTML = radarrConfig.qualityProfiles.map(p =>
+                            `<option value="${p.id}">${esc(p.name)}</option>`
+                        ).join('');
+                    }
+                }
+            } catch (e) {
+                console.error('Failed to load Radarr config:', e);
             }
         }
 
-        fetchDashboard();
-        setInterval(tick, 1000);
+        function openRadarrModal(movieDataStr) {
+            if (!radarrConfig || !radarrConfig.enabled) {
+                alert('Radarr integration is not configured. Set RADARR_URL and RADARR_API_KEY environment variables.');
+                return;
+            }
+            currentMovie = JSON.parse(movieDataStr);
+            document.getElementById('modal-movie-title').textContent = `${currentMovie.title} (${currentMovie.year})`;
+            document.getElementById('modal-error').style.display = 'none';
+            document.getElementById('modal-add-btn').disabled = false;
+            document.getElementById('radarr-modal').classList.add('visible');
+        }
+
+        function closeRadarrModal() {
+            document.getElementById('radarr-modal').classList.remove('visible');
+            currentMovie = null;
+        }
+
+        async function confirmAddToRadarr() {
+            if (!currentMovie) return;
+
+            const btn = document.getElementById('modal-add-btn');
+            const errorEl = document.getElementById('modal-error');
+            btn.disabled = true;
+            btn.textContent = 'Adding...';
+            errorEl.style.display = 'none';
+
+            try {
+                const res = await fetch('/api/radarr/add', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        tmdbId: currentMovie.tmdbId,
+                        title: currentMovie.title,
+                        year: currentMovie.year,
+                        rootFolderPath: document.getElementById('modal-root-folder').value,
+                        qualityProfileId: parseInt(document.getElementById('modal-quality-profile').value)
+                    })
+                });
+
+                const data = await res.json();
+                if (res.ok && data.success) {
+                    closeRadarrModal();
+                    // Refresh to show updated status
+                    await fetchDashboard();
+                } else {
+                    errorEl.textContent = data.error || 'Failed to add movie';
+                    errorEl.style.display = 'block';
+                }
+            } catch (e) {
+                errorEl.textContent = 'Network error: ' + e.message;
+                errorEl.style.display = 'block';
+            } finally {
+                btn.disabled = false;
+                btn.textContent = 'Add Movie';
+            }
+        }
+
+        // Movie detail modal
+        let currentDetailMovie = null;
+
+        async function openDetailModal(tmdbId) {
+            const modal = document.getElementById('detail-modal');
+            const content = document.getElementById('detail-content');
+            const backdrop = document.getElementById('detail-backdrop');
+
+            // Show modal with loading state
+            content.innerHTML = '<div class="detail-loading">Loading movie details...</div>';
+            backdrop.src = '';
+            modal.classList.add('visible');
+
+            try {
+                const res = await fetch(`/api/movies/${tmdbId}/details`);
+                if (!res.ok) throw new Error('Failed to fetch movie details');
+
+                const movie = await res.json();
+                currentDetailMovie = movie;
+
+                // Set backdrop
+                if (movie.backdropPath) {
+                    backdrop.src = movie.backdropPath;
+                }
+
+                // Format runtime
+                const hours = Math.floor((movie.runtime || 0) / 60);
+                const mins = (movie.runtime || 0) % 60;
+                const runtime = movie.runtime ? `${hours}h ${mins}m` : '';
+
+                // Format release date
+                const releaseDate = movie.releaseDate ? new Date(movie.releaseDate).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' }) : '';
+
+                // Build release dates HTML
+                let releasesHtml = '';
+                const releaseTypes = [
+                    { key: 'theatrical', label: '🎬 Theatrical', icon: '🎬' },
+                    { key: 'digital', label: '📺 Digital/Streaming', icon: '📺' },
+                    { key: 'physical', label: '💿 Physical', icon: '💿' }
+                ];
+
+                for (const rt of releaseTypes) {
+                    const releases = movie.releaseDates?.[rt.key] || [];
+                    if (releases.length > 0) {
+                        // Get unique dates, prefer US/GB/PT
+                        const priorityCountries = ['US', 'GB', 'PT'];
+                        let bestRelease = releases.find(r => priorityCountries.includes(r.country)) || releases[0];
+                        const date = new Date(bestRelease.date).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
+                        releasesHtml += `
+                            <div class="detail-release-card">
+                                <div class="detail-release-type">${rt.icon} ${rt.key}</div>
+                                <div class="detail-release-date">${esc(date)}</div>
+                                <div class="detail-release-country">${esc(bestRelease.country)}</div>
+                            </div>`;
+                    }
+                }
+
+                // Build Radarr section
+                let radarrHtml = '';
+                const radarrStatusLabel = movie.radarrStatus === 'downloaded' ? '✓ Downloaded' :
+                                          movie.radarrStatus === 'monitored' ? '👁 Monitored' :
+                                          movie.radarrStatus === 'not_added' ? 'Not in Radarr' : 'Unknown';
+
+                if (movie.radarrStatus === 'not_added' && radarrConfig?.enabled) {
+                    radarrHtml = `
+                        <div class="detail-radarr-status">
+                            <span class="detail-radarr-badge ${esc(movie.radarrStatus)}">${radarrStatusLabel}</span>
+                        </div>
+                        <div class="detail-add-form">
+                            <select id="detail-root-folder">
+                                ${radarrConfig.rootFolders.map(f => `<option value="${esc(f.path)}">${esc(f.path)}</option>`).join('')}
+                            </select>
+                            <select id="detail-quality-profile">
+                                ${radarrConfig.qualityProfiles.map(p => `<option value="${p.id}">${esc(p.name)}</option>`).join('')}
+                            </select>
+                            <button class="detail-add-btn" onclick="addFromDetailModal()">Add to Radarr</button>
+                        </div>
+                        <div id="detail-error" class="modal-error" style="display: none;"></div>`;
+                } else if (movie.radarrStatus !== 'unknown') {
+                    radarrHtml = `
+                        <div class="detail-radarr-status">
+                            <span class="detail-radarr-badge ${esc(movie.radarrStatus)}">${radarrStatusLabel}</span>
+                            ${movie.radarrId ? `<span style="color: #6b7280; font-size: 0.8rem;">Radarr ID: ${movie.radarrId}</span>` : ''}
+                        </div>`;
+                }
+
+                content.innerHTML = `
+                    <img class="detail-modal-poster" src="${movie.posterPath || ''}" alt="${esc(movie.title)}"
+                         onerror="this.style.display='none'">
+                    <div class="detail-modal-info">
+                        <h2 class="detail-modal-title">${esc(movie.title)}</h2>
+                        ${movie.tagline ? `<p class="detail-modal-tagline">"${esc(movie.tagline)}"</p>` : ''}
+                        <div class="detail-modal-meta">
+                            ${releaseDate ? `<span class="detail-meta-item"><span class="detail-meta-icon">📅</span>${releaseDate}</span>` : ''}
+                            ${runtime ? `<span class="detail-meta-item"><span class="detail-meta-icon">⏱</span>${runtime}</span>` : ''}
+                            ${movie.voteAverage ? `<span class="detail-meta-item"><span class="detail-meta-icon">⭐</span>${movie.voteAverage.toFixed(1)}</span>` : ''}
+                            ${movie.countries?.length ? `<span class="detail-meta-item"><span class="detail-meta-icon">🌍</span>${esc(movie.countries.join(', '))}</span>` : ''}
+                        </div>
+                        ${movie.genres?.length ? `<div class="detail-modal-genres">${movie.genres.map(g => `<span class="detail-genre">${esc(g)}</span>`).join('')}</div>` : ''}
+                        ${movie.overview ? `<p class="detail-modal-overview">${esc(movie.overview)}</p>` : ''}
+                        ${releasesHtml ? `<div class="detail-section"><div class="detail-section-title">Release Dates</div><div class="detail-releases">${releasesHtml}</div></div>` : ''}
+                        ${radarrHtml ? `<div class="detail-section"><div class="detail-section-title">Radarr</div><div class="detail-radarr-section">${radarrHtml}</div></div>` : ''}
+                    </div>`;
+            } catch (e) {
+                content.innerHTML = `<div class="detail-loading" style="color: #f87171;">Failed to load movie details: ${esc(e.message)}</div>`;
+            }
+        }
+
+        function closeDetailModal() {
+            document.getElementById('detail-modal').classList.remove('visible');
+            currentDetailMovie = null;
+        }
+
+        async function addFromDetailModal() {
+            if (!currentDetailMovie) return;
+
+            const btn = document.querySelector('.detail-add-btn');
+            const errorEl = document.getElementById('detail-error');
+            btn.disabled = true;
+            btn.textContent = 'Adding...';
+            if (errorEl) errorEl.style.display = 'none';
+
+            try {
+                const res = await fetch('/api/radarr/add', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        tmdbId: currentDetailMovie.id,
+                        title: currentDetailMovie.title,
+                        year: currentDetailMovie.releaseDate ? new Date(currentDetailMovie.releaseDate).getFullYear() : new Date().getFullYear(),
+                        rootFolderPath: document.getElementById('detail-root-folder').value,
+                        qualityProfileId: parseInt(document.getElementById('detail-quality-profile').value)
+                    })
+                });
+
+                const data = await res.json();
+                if (res.ok && data.success) {
+                    closeDetailModal();
+                    await fetchDashboard();
+                } else {
+                    if (errorEl) {
+                        errorEl.textContent = data.error || 'Failed to add movie';
+                        errorEl.style.display = 'block';
+                    }
+                }
+            } catch (e) {
+                if (errorEl) {
+                    errorEl.textContent = 'Network error: ' + e.message;
+                    errorEl.style.display = 'block';
+                }
+            } finally {
+                btn.disabled = false;
+                btn.textContent = 'Add to Radarr';
+            }
+        }
+
+        init();
     </script>
 </body>
 </html>

@@ -5,6 +5,8 @@ import { type CinemaApiClient } from '../../../Domain/CinemaApiClient'
 import { type Movie } from '../../../Domain/Movie'
 import { type LogStore } from '../../../Domain/Logging/LogStore'
 import { type MovieStatusStore } from '../../../Domain/Dashboard/MovieStatusStore'
+import { type RadarrClient } from '../../../Domain/Radarr/RadarrClient'
+import { type RadarrStatus } from '../../../Domain/Dashboard/MovieStatus'
 dayjs().format()
 
 interface NosMovie {
@@ -29,7 +31,8 @@ export class NosMovies implements CinemaApiClient {
   constructor (
     private readonly indexer: TmdbIndexer,
     private readonly logStore?: LogStore,
-    private readonly movieStatusStore?: MovieStatusStore
+    private readonly movieStatusStore?: MovieStatusStore,
+    private readonly radarrClient?: RadarrClient
   ) {
   }
 
@@ -39,6 +42,15 @@ export class NosMovies implements CinemaApiClient {
     } else {
       console.log(`[NosMovies] ${message}`)
     }
+  }
+
+  private normalizePosterUrl (path?: string): string {
+    if (path == null || path === '') return ''
+    // NOS returns protocol-relative URLs like //cdn.nos.pt/...
+    if (path.startsWith('//')) {
+      return `https:${path}`
+    }
+    return path
   }
 
   async getMovies (): Promise<Movie[]> {
@@ -68,13 +80,14 @@ export class NosMovies implements CinemaApiClient {
       const returnMovies: Movie[] = []
       for (const movie of movies) {
         const releaseDate = dayjs(movie.releasedate).format('YYYY-MM-DD')
+        const posterUrl = this.normalizePosterUrl(movie.portraitimages?.path)
 
         // Update status to processing
         this.movieStatusStore?.updateMovieStatus({
           title: movie.title,
           originalTitle: movie.originaltitle,
           releaseDate,
-          poster: movie.portraitimages?.path,
+          poster: posterUrl,
           status: 'processing',
           source: 'NOS'
         })
@@ -86,7 +99,7 @@ export class NosMovies implements CinemaApiClient {
             title: movie.title,
             originalTitle: movie.originaltitle,
             releaseDate,
-            poster: movie.portraitimages?.path,
+            poster: posterUrl,
             status: 'not_found',
             error: 'Movie not found in TMDB',
             source: 'NOS'
@@ -96,22 +109,43 @@ export class NosMovies implements CinemaApiClient {
 
         const imdbId = await this.indexer.fetchImdbId(tmdbMovies[0].id)
 
+        // Check if movie is in Radarr
+        let radarrStatus: RadarrStatus = 'unknown'
+        let radarrId: number | undefined
+        if (this.radarrClient != null) {
+          const radarrMovie = await this.radarrClient.getMovieByTmdbId(tmdbMovies[0].id)
+          if (radarrMovie != null) {
+            radarrId = radarrMovie.id
+            radarrStatus = radarrMovie.hasFile ? 'downloaded' : 'monitored'
+            this.log('info', `Movie found in Radarr: ${radarrStatus}`, {
+              title: movie.originaltitle,
+              radarrId,
+              hasFile: radarrMovie.hasFile
+            })
+          } else {
+            radarrStatus = 'not_added'
+          }
+        }
+
         // Update status to success
         this.movieStatusStore?.updateMovieStatus({
           title: movie.title,
           originalTitle: movie.originaltitle,
           releaseDate,
-          poster: movie.portraitimages?.path,
+          poster: posterUrl,
           tmdbId: tmdbMovies[0].id,
           imdbId,
           status: 'success',
-          source: 'NOS'
+          source: 'NOS',
+          radarrStatus,
+          radarrId
         })
 
         this.log('info', 'Successfully processed movie', {
           title: movie.originaltitle,
           tmdbId: tmdbMovies[0].id,
-          imdbId
+          imdbId,
+          radarrStatus
         })
 
         returnMovies.push({
@@ -120,11 +154,11 @@ export class NosMovies implements CinemaApiClient {
           tmdb_id: tmdbMovies[0].id,
           imdbId,
           imdb_id: imdbId,
-          poster: movie.portraitimages?.path ?? '',
+          poster: posterUrl,
           images: [
             {
               coverType: 'poster',
-              url: movie.portraitimages?.path ?? ''
+              url: posterUrl
             }
           ],
           description: tmdbMovies[0].overview,
