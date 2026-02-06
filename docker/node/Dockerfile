@@ -46,14 +46,27 @@ COPY bin ./bin
 RUN bun install
 RUN bun run build
 
-FROM app_base AS prod
+FROM app_base AS prod_deps
+
+ENV NODE_ENV=production
+RUN bun install --production --frozen-lockfile
+
+FROM oven/bun:1.3-alpine AS prod
+
+WORKDIR /app
 
 ENV APP_ENV=prod
 ENV NODE_ENV=production
+ENV PORT=3000
 
-RUN bun install --production --frozen-lockfile
+EXPOSE 3000
 
+# Copy production dependencies
+COPY --from=prod_deps /app/node_modules ./node_modules
+# Copy compiled code
 COPY --from=build /app/dist .
+# Copy HTML files for the dashboard (not compiled by TypeScript)
+COPY src/Ui/Html ./src/Ui/Html
 
 COPY docker/node/entrypoint.sh /entrypoint.sh
 RUN chmod +x /entrypoint.sh

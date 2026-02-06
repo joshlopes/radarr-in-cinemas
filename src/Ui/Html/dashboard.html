@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Radarr Cinema Dashboard</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #1a1a2e; color: #eee; min-height: 100vh; }
+        .container { max-width: 1400px; margin: 0 auto; padding: 20px; }
+        header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; padding: 15px 20px; background: #16213e; border-radius: 10px; }
+        h1 { font-size: 1.5rem; color: #e94560; }
+        .status-badge { padding: 8px 16px; border-radius: 20px; font-size: 0.85rem; font-weight: 600; }
+        .status-running { background: #4ade80; color: #000; }
+        .status-idle { background: #64748b; color: #fff; }
+        .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin-bottom: 20px; }
+        .stat-card { background: #16213e; padding: 20px; border-radius: 10px; text-align: center; }
+        .stat-value { font-size: 2.5rem; font-weight: 700; color: #e94560; }
+        .stat-label { color: #94a3b8; font-size: 0.9rem; margin-top: 5px; }
+        .main-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+        @media (max-width: 1000px) { .main-grid { grid-template-columns: 1fr; } }
+        .panel { background: #16213e; border-radius: 10px; overflow: hidden; }
+        .panel-header { padding: 15px 20px; background: #0f3460; display: flex; justify-content: space-between; align-items: center; }
+        .panel-title { font-weight: 600; }
+        .panel-content { padding: 15px; max-height: 500px; overflow-y: auto; }
+        .log-entry { padding: 8px 12px; margin-bottom: 8px; border-radius: 6px; font-size: 0.85rem; background: #1a1a2e; border-left: 3px solid #64748b; }
+        .log-entry.info { border-left-color: #3b82f6; }
+        .log-entry.warn { border-left-color: #f59e0b; }
+        .log-entry.error { border-left-color: #ef4444; }
+        .log-entry.debug { border-left-color: #8b5cf6; }
+        .log-time { color: #64748b; font-size: 0.75rem; }
+        .log-source { color: #e94560; font-weight: 600; margin: 0 8px; }
+        .log-message { color: #e2e8f0; }
+        .movie-card { display: flex; gap: 15px; padding: 12px; margin-bottom: 10px; background: #1a1a2e; border-radius: 8px; }
+        .movie-poster { width: 60px; height: 90px; object-fit: cover; border-radius: 4px; background: #333; }
+        .movie-info { flex: 1; }
+        .movie-title { font-weight: 600; margin-bottom: 4px; }
+        .movie-meta { font-size: 0.8rem; color: #94a3b8; }
+        .movie-ids { font-size: 0.75rem; color: #64748b; margin-top: 4px; }
+        .movie-status { padding: 4px 10px; border-radius: 12px; font-size: 0.75rem; font-weight: 600; }
+        .movie-status.success { background: #22c55e33; color: #4ade80; }
+        .movie-status.error { background: #ef444433; color: #f87171; }
+        .movie-status.not_found { background: #f59e0b33; color: #fbbf24; }
+        .movie-status.processing { background: #3b82f633; color: #60a5fa; }
+        .refresh-info { font-size: 0.8rem; color: #64748b; }
+        .empty-state { text-align: center; padding: 40px; color: #64748b; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🎬 Radarr Cinema Dashboard</h1>
+            <div style="display: flex; align-items: center; gap: 15px;">
+                <span class="refresh-info">Auto-refresh: <span id="countdown">30</span>s</span>
+                <span id="status-badge" class="status-badge status-idle">Idle</span>
+            </div>
+        </header>
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="stat-value" id="stat-total">0</div>
+                <div class="stat-label">Total Movies</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value" id="stat-success" style="color: #4ade80;">0</div>
+                <div class="stat-label">Successful</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value" id="stat-failed" style="color: #f87171;">0</div>
+                <div class="stat-label">Failed</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value" id="stat-notfound" style="color: #fbbf24;">0</div>
+                <div class="stat-label">Not Found</div>
+            </div>
+        </div>
+        <div id="last-run" style="text-align: center; margin-bottom: 20px; color: #64748b; font-size: 0.9rem;"></div>
+        <div class="main-grid">
+            <div class="panel">
+                <div class="panel-header">
+                    <span class="panel-title">📋 Activity Logs</span>
+                    <span id="log-count" style="color: #64748b; font-size: 0.85rem;">0 entries</span>
+                </div>
+                <div class="panel-content" id="logs-container">
+                    <div class="empty-state">No logs yet. Waiting for activity...</div>
+                </div>
+            </div>
+            <div class="panel">
+                <div class="panel-header">
+                    <span class="panel-title">🎥 Movies</span>
+                    <span id="movie-count" style="color: #64748b; font-size: 0.85rem;">0 movies</span>
+                </div>
+                <div class="panel-content" id="movies-container">
+                    <div class="empty-state">No movies processed yet.</div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <script>
+        let countdown = 30;
+        const REFRESH_INTERVAL = 30;
+
+        async function fetchDashboard() {
+            try {
+                const res = await fetch('/api/dashboard');
+                const data = await res.json();
+                updateStats(data.stats);
+                updateLogs(data.logs);
+                updateMovies(data.movies);
+            } catch (e) { console.error('Failed to fetch dashboard:', e); }
+        }
+
+        function updateStats(stats) {
+            document.getElementById('stat-total').textContent = stats.totalMoviesProcessed;
+            document.getElementById('stat-success').textContent = stats.successfulMovies;
+            document.getElementById('stat-failed').textContent = stats.failedMovies;
+            document.getElementById('stat-notfound').textContent = stats.notFoundMovies;
+            const badge = document.getElementById('status-badge');
+            if (stats.isRunning) {
+                badge.textContent = 'Running...';
+                badge.className = 'status-badge status-running';
+            } else {
+                badge.textContent = 'Idle';
+                badge.className = 'status-badge status-idle';
+            }
+            const lastRun = document.getElementById('last-run');
+            if (stats.lastRunAt) {
+                const date = new Date(stats.lastRunAt);
+                const duration = stats.lastRunDuration ? `(${(stats.lastRunDuration / 1000).toFixed(1)}s)` : '';
+                lastRun.textContent = `Last run: ${date.toLocaleString()} ${duration}`;
+            } else {
+                lastRun.textContent = 'No runs yet';
+            }
+        }
+
+        function updateLogs(logs) {
+            const container = document.getElementById('logs-container');
+            document.getElementById('log-count').textContent = `${logs.length} entries`;
+            if (logs.length === 0) {
+                container.innerHTML = '<div class="empty-state">No logs yet. Waiting for activity...</div>';
+                return;
+            }
+            container.innerHTML = logs.slice().reverse().map(log => {
+                const time = new Date(log.timestamp).toLocaleTimeString();
+                const ctx = log.context ? ` <span style="color:#64748b">${JSON.stringify(log.context)}</span>` : '';
+                return `<div class="log-entry ${log.level}">
+                    <span class="log-time">${time}</span>
+                    <span class="log-source">[${log.source}]</span>
+                    <span class="log-message">${log.message}${ctx}</span>
+                </div>`;
+            }).join('');
+        }
+
+        function updateMovies(movies) {
+            const container = document.getElementById('movies-container');
+            document.getElementById('movie-count').textContent = `${movies.length} movies`;
+            if (movies.length === 0) {
+                container.innerHTML = '<div class="empty-state">No movies processed yet.</div>';
+                return;
+            }
+            container.innerHTML = movies.map(m => {
+                const poster = m.poster || 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" width="60" height="90"><rect fill="%23333" width="60" height="90"/><text x="30" y="50" text-anchor="middle" fill="%23666" font-size="10">No Poster</text></svg>';
+                const ids = [];
+                if (m.tmdbId) ids.push(`TMDB: ${m.tmdbId}`);
+                if (m.imdbId) ids.push(`IMDB: ${m.imdbId}`);
+                return `<div class="movie-card">
+                    <img class="movie-poster" src="${poster}" alt="${m.title}" onerror="this.src='data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%2260%22 height=%2290%22><rect fill=%22%23333%22 width=%2260%22 height=%2290%22/></svg>'">
+                    <div class="movie-info">
+                        <div class="movie-title">${m.originalTitle || m.title}</div>
+                        <div class="movie-meta">${m.releaseDate} • ${m.source}</div>
+                        <div class="movie-ids">${ids.join(' • ') || 'No IDs yet'}</div>
+                        ${m.error ? `<div style="color:#f87171;font-size:0.75rem;margin-top:4px">⚠️ ${m.error}</div>` : ''}
+                    </div>
+                    <span class="movie-status ${m.status}">${m.status.replace('_', ' ')}</span>
+                </div>`;
+            }).join('');
+        }
+
+        function tick() {
+            countdown--;
+            document.getElementById('countdown').textContent = countdown;
+            if (countdown <= 0) {
+                countdown = REFRESH_INTERVAL;
+                fetchDashboard();
+            }
+        }
+
+        fetchDashboard();
+        setInterval(tick, 1000);
+    </script>
+</body>
+</html>
+

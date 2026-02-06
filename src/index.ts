@@ -2,7 +2,12 @@ import express, { type Response } from 'express'
 import { NosMovies } from './Infrastructure/Cinema/Nos/NosMovies'
 import { TmdbIndexer } from './Infrastructure/Indexer/Tmdb/TmdbIndexer'
 import { GetMoviesCommand } from './Application/Query/GetMovies/GetMoviesCommand'
+import { InMemoryLogStore } from './Infrastructure/Logging/InMemoryLogStore'
+import { InMemoryMovieStatusStore } from './Infrastructure/Dashboard/InMemoryMovieStatusStore'
+import { DashboardController } from './Ui/Http/DashboardController'
 import RSS from 'rss'
+import path from 'path'
+import fs from 'fs'
 
 // Create a new Express application instance
 const app = express()
@@ -14,9 +19,19 @@ app.use((_req, res, next) => {
   next()
 })
 
-// Init services
-const indexer = new TmdbIndexer(process.env.TMDB_API_KEY ?? '')
-const nosMovies = new NosMovies(indexer)
+// Init logging and dashboard stores
+const logStore = new InMemoryLogStore(500)
+const movieStatusStore = new InMemoryMovieStatusStore()
+
+// Init services with logging
+const indexer = new TmdbIndexer(process.env.TMDB_API_KEY ?? '', logStore)
+const nosMovies = new NosMovies(indexer, logStore, movieStatusStore)
+
+// Dashboard controller
+const dashboardController = new DashboardController(logStore, movieStatusStore)
+
+// Log startup
+logStore.log('info', 'Server starting up', 'System')
 
 // Define the route
 app.get('/api/movies', (req: any, res: Response) => {
@@ -72,8 +87,58 @@ app.get('/api/movies.rss', (req: any, res: Response) => {
     })
 })
 
+// Dashboard API routes
+app.get('/api/dashboard', (req, res) => {
+  dashboardController.getDashboardData(req, res)
+})
+
+app.get('/api/dashboard/logs', (req, res) => {
+  dashboardController.getLogs(req, res)
+})
+
+app.get('/api/dashboard/movies', (req, res) => {
+  dashboardController.getMovies(req, res)
+})
+
+app.get('/api/dashboard/stats', (req, res) => {
+  dashboardController.getStats(req, res)
+})
+
+// Serve dashboard HTML
+app.get('/', (_req, res) => {
+  // Try multiple paths to support both dev (src/) and prod (dist/) environments
+  const possiblePaths = [
+    path.join(import.meta.dir, 'Ui/Html/dashboard.html'),
+    path.join(import.meta.dir, '../src/Ui/Html/dashboard.html'),
+    path.join(process.cwd(), 'src/Ui/Html/dashboard.html'),
+    path.join(process.cwd(), 'Ui/Html/dashboard.html')
+  ]
+
+  let html: string | null = null
+  for (const htmlPath of possiblePaths) {
+    if (fs.existsSync(htmlPath)) {
+      html = fs.readFileSync(htmlPath, 'utf-8')
+      break
+    }
+  }
+
+  if (html !== null) {
+    res.header('Content-Type', 'text/html')
+    res.send(html)
+  } else {
+    logStore.log('error', 'Dashboard HTML not found', 'System', { triedPaths: possiblePaths })
+    res.status(500).send('Dashboard not found')
+  }
+})
+
+app.get('/dashboard', (_req, res) => {
+  res.redirect('/')
+})
+
 // Start the server
 const PORT = process.env.PORT ?? 3000
 app.listen(PORT, () => {
+  logStore.log('info', `Server started on port ${PORT}`, 'System')
   console.log(`Server is running on http://localhost:${PORT}`)
+  console.log(`Dashboard available at http://localhost:${PORT}/`)
 })
