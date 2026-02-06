@@ -23,7 +23,7 @@
     "start": "bun run src/index.ts",
     "start:watch": "bun run --watch src/index.ts",
     "check:type": "bun run tsc --noEmit",
-    "test": "bun test --bail",
+    "test": "bun test",
     "lint": "bun run check:type && bun run eslint src/**/*.ts",
     "lint:fix": "bun run eslint . --fix",
     "build": "bun run tsc -p ."
