@@ -43,7 +43,7 @@ run-prod: build-prod
 	@echo "Container started at http://localhost:$(PORT)"
 	@echo "Dashboard available at http://localhost:$(PORT)/"
 
-run-dev:
+run-dev: build-dev
 	docker run -d --rm \
 		--name $(CONTAINER_NAME)-dev \
 		-p $(PORT):3000 \

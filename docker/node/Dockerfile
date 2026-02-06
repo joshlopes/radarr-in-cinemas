@@ -55,6 +55,9 @@ FROM oven/bun:1.3-alpine AS prod
 
 WORKDIR /app
 
+# Copy package.json for ESM module resolution
+COPY package.json ./
+
 ENV APP_ENV=prod
 ENV NODE_ENV=production
 ENV PORT=3000

@@ -120,11 +120,11 @@ export class NosMovies implements CinemaApiClient {
           tmdb_id: tmdbMovies[0].id,
           imdbId,
           imdb_id: imdbId,
-          poster: movie.portraitimages.path,
+          poster: movie.portraitimages?.path ?? '',
           images: [
             {
               coverType: 'poster',
-              url: movie.portraitimages.path
+              url: movie.portraitimages?.path ?? ''
             }
           ],
           description: tmdbMovies[0].overview,

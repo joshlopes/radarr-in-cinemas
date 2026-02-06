@@ -99,9 +99,18 @@
         let countdown = 30;
         const REFRESH_INTERVAL = 30;
 
+        // HTML escape helper to prevent XSS
+        function esc(str) {
+            if (str == null) return '';
+            const el = document.createElement('div');
+            el.textContent = String(str);
+            return el.innerHTML;
+        }
+
         async function fetchDashboard() {
             try {
                 const res = await fetch('/api/dashboard');
+                if (!res.ok) throw new Error(`HTTP ${res.status}`);
                 const data = await res.json();
                 updateStats(data.stats);
                 updateLogs(data.logs);
@@ -141,11 +150,12 @@
             }
             container.innerHTML = logs.slice().reverse().map(log => {
                 const time = new Date(log.timestamp).toLocaleTimeString();
-                const ctx = log.context ? ` <span style="color:#64748b">${JSON.stringify(log.context)}</span>` : '';
-                return `<div class="log-entry ${log.level}">
-                    <span class="log-time">${time}</span>
-                    <span class="log-source">[${log.source}]</span>
-                    <span class="log-message">${log.message}${ctx}</span>
+                const ctx = log.context ? ` <span style="color:#64748b">${esc(JSON.stringify(log.context))}</span>` : '';
+                const level = esc(log.level);
+                return `<div class="log-entry ${level}">
+                    <span class="log-time">${esc(time)}</span>
+                    <span class="log-source">[${esc(log.source)}]</span>
+                    <span class="log-message">${esc(log.message)}${ctx}</span>
                 </div>`;
             }).join('');
         }
@@ -157,20 +167,27 @@
                 container.innerHTML = '<div class="empty-state">No movies processed yet.</div>';
                 return;
             }
+            const defaultPoster = 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" width="60" height="90"><rect fill="%23333" width="60" height="90"/><text x="30" y="50" text-anchor="middle" fill="%23666" font-size="10">No Poster</text></svg>';
             container.innerHTML = movies.map(m => {
-                const poster = m.poster || 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" width="60" height="90"><rect fill="%23333" width="60" height="90"/><text x="30" y="50" text-anchor="middle" fill="%23666" font-size="10">No Poster</text></svg>';
+                // Sanitize poster URL - only allow http(s) and data URIs
+                let poster = defaultPoster;
+                if (m.poster && /^(https?:|data:image\/)/.test(m.poster)) {
+                    poster = esc(m.poster);
+                }
                 const ids = [];
-                if (m.tmdbId) ids.push(`TMDB: ${m.tmdbId}`);
-                if (m.imdbId) ids.push(`IMDB: ${m.imdbId}`);
+                if (m.tmdbId) ids.push(`TMDB: ${esc(m.tmdbId)}`);
+                if (m.imdbId) ids.push(`IMDB: ${esc(m.imdbId)}`);
+                const title = esc(m.originalTitle || m.title);
+                const status = esc(m.status || 'unknown');
                 return `<div class="movie-card">
-                    <img class="movie-poster" src="${poster}" alt="${m.title}" onerror="this.src='data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%2260%22 height=%2290%22><rect fill=%22%23333%22 width=%2260%22 height=%2290%22/></svg>'">
+                    <img class="movie-poster" src="${poster}" alt="${title}" onerror="this.src='data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%2260%22 height=%2290%22><rect fill=%22%23333%22 width=%2260%22 height=%2290%22/></svg>'">
                     <div class="movie-info">
-                        <div class="movie-title">${m.originalTitle || m.title}</div>
-                        <div class="movie-meta">${m.releaseDate} • ${m.source}</div>
+                        <div class="movie-title">${title}</div>
+                        <div class="movie-meta">${esc(m.releaseDate)} • ${esc(m.source)}</div>
                         <div class="movie-ids">${ids.join(' • ') || 'No IDs yet'}</div>
-                        ${m.error ? `<div style="color:#f87171;font-size:0.75rem;margin-top:4px">⚠️ ${m.error}</div>` : ''}
+                        ${m.error ? `<div style="color:#f87171;font-size:0.75rem;margin-top:4px">⚠️ ${esc(m.error)}</div>` : ''}
                     </div>
-                    <span class="movie-status ${m.status}">${m.status.replace('_', ' ')}</span>
+                    <span class="movie-status ${status}">${status.replace('_', ' ')}</span>
                 </div>`;
             }).join('');
         }
